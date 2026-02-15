@@ -1,0 +1,107 @@
+#!/bin/bash
+
+# =====================================================================================
+#
+#  ▖  ▖   ▌▘  ▖  ▖    ▗
+#  ▛▖▞▌█▌▛▌▌▀▌▛▖▞▌▀▌▛▘▜▘█▌▛▘
+#  ▌▝ ▌▙▖▙▌▌█▌▌▝ ▌█▌▄▌▐▖▙▖▌
+#
+#  MediaMaster v1.1 (February 15, 2026)
+#  --- The Only Media File Counter You Need on Linux ---
+#  Recursively counts audio and video files in specified directories.
+#
+#  License: MIT
+#  Copyright (c) 2026, Chris McGimpsey-Jones
+#
+#  Permission is hereby granted, free of charge, to any person obtaining a copy
+#  of this software and associated documentation files... (etc)
+#
+# =====================================================================================
+
+# Usage: mediamaster [directory1] [directory2] [directory3] ...
+# If no directories are provided, it will use the current working directory.
+# It counts files with common audio/video extensions, excluding directories.
+
+#start
+
+# Media file extensions definitions
+AUDIO_EXTS=("mp3" "wav" "flac" "aac" "ogg" "m4a")
+VIDEO_EXTS=("mp4" "avi" "mkv" "mov" "wmv" "flv" "webm")
+
+# Specify the count directories
+DIRS=("${@:-.}")
+
+# Function to build the find name expressions
+build_find_args() {
+    local args=()
+    local first=true
+    for ext in "${AUDIO_EXTS[@]}" "${VIDEO_EXTS[@]}"; do
+        if $first; then
+            args+=(-iname "*.$ext")
+            first=false
+        else
+            args+=(-o -iname "*.$ext")
+        fi
+    done
+    echo "${args[@]}"
+}
+
+# Function to count files in a single directory
+count_directory() {
+    local DIR="$1"
+
+    # Check if the directory is a GVFS SFTP mount
+    if [[ "$DIR" =~ ^/run/user/.*/gvfs/sftp:host=([^,]+),user=([^/]+)(/.*)$ ]]; then
+        HOST="${BASH_REMATCH[1]}"
+        USER="${BASH_REMATCH[2]}"
+        REMOTE_DIR="${BASH_REMATCH[3]}"
+
+        echo "🔍 Detected GVFS SFTP mount. Running count remotely on $HOST as $USER."
+
+        # Build the find command for remote execution
+        FIND_ARGS=$(build_find_args)
+        REMOTE_CMD="find \"$REMOTE_DIR\" -type f \( $FIND_ARGS \) 2>/dev/null | wc -l"
+
+        # Execute via SSH
+        COUNT=$(ssh "$USER@$HOST" "$REMOTE_CMD" 2>&1)
+        if [[ $? -ne 0 ]]; then
+            echo "❌ Error: Failed to connect or execute on remote server. Check SSH access and server tools."
+            echo "   Output: $COUNT"
+            return 1
+        fi
+    else
+        # Local directory: Use original find logic
+        FIND_ARGS=$(build_find_args)
+        COUNT=$(find "$DIR" -type f \( $FIND_ARGS \) 2>/dev/null | wc -l)
+    fi
+
+    echo "$COUNT"
+}
+
+# Main execution
+echo "🎵 Audio extensions: ${AUDIO_EXTS[*]}"
+echo "🎥 Video extensions: ${VIDEO_EXTS[*]}"
+echo ""
+
+TOTAL_COUNT=0
+
+for DIR in "${DIRS[@]}"; do
+    echo "📁 Scanning: $DIR"
+    echo "⏳ Counting... (this may take a moment for large directories)"
+
+    DIR_COUNT=$(count_directory "$DIR")
+
+    if [[ $? -eq 0 ]]; then
+        echo "✅ Files found in this directory: $DIR_COUNT"
+        TOTAL_COUNT=$((TOTAL_COUNT + DIR_COUNT))
+    else
+        echo "⚠️  Skipping this directory due to errors."
+    fi
+    echo ""
+done
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "✅ Total media files across all directories: $TOTAL_COUNT"
+echo "🚀 MediaMaster is done! Keep those files organized."
+
+#end
