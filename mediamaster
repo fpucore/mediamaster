@@ -6,7 +6,7 @@
 #  ▛▖▞▌█▌▛▌▌▀▌▛▖▞▌▀▌▛▘▜▘█▌▛▘
 #  ▌▝ ▌▙▖▙▌▌█▌▌▝ ▌█▌▄▌▐▖▙▖▌
 #
-#  MediaMaster v1.1 (February 15, 2026)
+#  MediaMaster v1.1.1 (February 15, 2026)
 #  --- The Only Media File Counter You Need on Linux ---
 #  Recursively counts audio and video files in specified directories.
 #
@@ -18,7 +18,7 @@
 #
 # =====================================================================================
 
-# Usage: mediamaster [directory1] [directory2] [directory3] ...
+# Usage: ./mediamaster [directory1] [directory2] [directory3] ...
 # If no directories are provided, it will use the current working directory.
 # It counts files with common audio/video extensions, excluding directories.
 

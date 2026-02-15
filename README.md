@@ -39,6 +39,6 @@ GVFS SFTP remote acceleration (only when scanning a GVFS SFTP mount path):
 Clone and make executable:
 
 ```bash
-git clone https://github.com/<your-username>/mediamaster.git
+git clone https://github.com/fpucore/mediamaster.git
 cd mediamaster
-chmod +x mediamaster.sh
+chmod +x mediamaster
